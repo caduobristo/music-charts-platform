@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:15
+    container_name: music_db
+    restart: always
+    environment:
+      POSTGRES_USER: music
+      POSTGRES_PASSWORD: music123
+      POSTGRES_DB: music_charts
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: music_app
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    command: tail -f /dev/null
+
+volumes:
+  postgres_data:
