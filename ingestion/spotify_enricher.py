@@ -32,7 +32,11 @@ class SpotifyClient:
 
         res = requests.get(url, headers=self._headers(), params=params).json()
         if not res["tracks"]["items"]:
-            return None
+            # Se a busca com nome e artista não retornar resultados, tenta buscar apenas pelo nome da faixa
+            params = {"q": f"track:{track}", "type": "track", "limit": 1}
+            res = requests.get(url, headers=self._headers(), params=params).json()
+            if not res["tracks"]["items"]:
+                return None
 
         t = res["tracks"]["items"][0]
 
@@ -53,9 +57,10 @@ class SpotifyClient:
             return None
 
         tracks = res.json()
+        content = tracks.get("content") if isinstance(tracks, dict) else None
 
-        if tracks:
-            return tracks['content'][0]['id']  # achou o track correspondente
+        if content:
+            return content[0]["id"]
 
         print("Track não encontrada na ReccoBeats")
         return None
@@ -64,6 +69,8 @@ class SpotifyClient:
         # Busca as features de áudio da música usando o ID do ReccoBeats correspondente ao ID do Spotify
 
         recco_id = self.get_reccobeats_track(spotify_id)
+        if not recco_id:
+            return None
         url = f"https://api.reccobeats.com/v1/track/{recco_id}/audio-features"
         headers = {"Accept": "application/json"}
 
@@ -74,7 +81,6 @@ class SpotifyClient:
             return None
 
         return res.json()
-
 
     def get_artist_data(self, artist):
         # Busca as informações do artista usando o nome do artista
@@ -87,6 +93,18 @@ class SpotifyClient:
             return None
 
         return res["artists"]["items"][0]
+
+    def get_artist_by_id(self, artist_id):
+        # Busca as informações do artista usando o ID do Spotify
+
+        url = f"https://api.spotify.com/v1/artists/{artist_id}"
+        res = requests.get(url, headers=self._headers())
+
+        if res.status_code != 200:
+            print("Erro ao buscar artista:", res.status_code)
+            return None
+
+        return res.json()
 
     def get_album_data(self, album, artist):
         # Busca as informações do álbum usando o nome do álbum e o nome do artista
@@ -101,6 +119,18 @@ class SpotifyClient:
             return None
 
         return res["albums"]["items"][0]
+
+    def get_album_by_id(self, album_id):
+        # Busca as informações do album usando o ID do Spotify
+
+        url = f"https://api.spotify.com/v1/albums/{album_id}"
+        res = requests.get(url, headers=self._headers())
+
+        if res.status_code != 200:
+            print("Erro ao buscar album:", res.status_code)
+            return None
+
+        return res.json()
     
 
 def main():

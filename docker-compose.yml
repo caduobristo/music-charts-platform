@@ -17,6 +17,7 @@ services:
     env_file:
       - .env
     container_name: music_app
+    restart: always
     depends_on:
       - db
     volumes:

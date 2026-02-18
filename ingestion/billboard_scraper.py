@@ -53,10 +53,10 @@ def fetch_page(url:str):
 if __name__ == "__main__":
     # Teste em cada página
     print("Fetching Billboard Hot 100...")
-    fetch_page(URL_HOT100)
+    print(fetch_page(URL_HOT100))
     print("Fetching Billboard 200...")
-    fetch_page(URL_200)
+    print(fetch_page(URL_200))
     print("Fetching Billboard Global 200...")
-    fetch_page(URL_GLOBAL200)
+    print(fetch_page(URL_GLOBAL200))
     print("Fetching Billboard Artist 100...")
-    fetch_page(URL_ARTIST100)
+    print(fetch_page(URL_ARTIST100))
