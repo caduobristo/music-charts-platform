@@ -60,7 +60,13 @@ def save_rank_csv(chart_name, rows):
     write_header = not os.path.exists(path)
 
     with open(path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+        # Coleta todos os campos possíveis de todos os items para incluir spotify_id
+        all_fields = set()
+        for row in rows:
+            all_fields.update(row.keys())
+        fieldnames = list(all_fields)
+        
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
 
         if write_header:
             writer.writeheader()
@@ -103,7 +109,7 @@ def process_album(item, spotify):
     return data, artist_id
 
 def process_artist(item, spotify):
-    artist = normalize_artist(item["artist"])
+    artist = normalize_artist(item["title"])
 
     print(f"Artist: {artist}")
 
@@ -124,7 +130,7 @@ def already_seen(df, **filters):
         mask &= (df[col] == value)
     return mask.any()
 
-def run_pipeline():
+def run_ingestion():
     spotify = SpotifyClient()
 
     df_track = load_existing_csv("data/tracks.csv")
@@ -142,9 +148,7 @@ def run_pipeline():
 
         ranking = fetch_page(cfg["url"])
 
-        save_rank_csv(chart_name + "_" + today, ranking)
-
-        print(f"{len(ranking)} linhas salvas no CSV.")
+        print(f"{len(ranking)} linhas coletadas.")
 
         for item in ranking:
             try:
@@ -155,6 +159,8 @@ def run_pipeline():
                     # Verifica se a música já foi procurada
                     if already_seen(df_track, query_title=title, query_artist=artist):
                         print("Track ja buscada, pulando.")
+                        # Busca o spotify_id do dataframe existente
+                        item["spotify_id"] = df_track[(df_track['query_title'] == title) & (df_track['query_artist'] == artist)]['id'].iloc[0]
                         continue
 
                     df_item, artist_id, album_id = process_track(item, spotify)
@@ -168,6 +174,9 @@ def run_pipeline():
                         df_item["query_title"] = title
                         df_item["query_artist"] = artist
                         df_track = pd.concat([df_track, pd.DataFrame([df_item])])
+                        
+                        # Adiciona o spotify_id ao ranking para chave estrangeira
+                        item["spotify_id"] = df_item.get("id")
 
                         # Coletas as features de áudio usando o ID do Spotify da música
                         spotify_id = df_item.get("id")
@@ -184,6 +193,8 @@ def run_pipeline():
                     # Verifica se o album já foi procurada
                     if already_seen(df_album, query_title=album, query_artist=artist):
                         print("Album ja buscado, pulando.")
+                        # Busca o spotify_id do dataframe existente
+                        item["spotify_id"] = df_album[(df_album['query_title'] == album) & (df_album['query_artist'] == artist)]['id'].iloc[0]
                         continue
 
                     df_item, artist_id = process_album(item, spotify)
@@ -195,12 +206,17 @@ def run_pipeline():
                         df_item["query_title"] = album
                         df_item["query_artist"] = artist
                         df_album = pd.concat([df_album, pd.DataFrame([df_item])])
+                        
+                        # Adiciona o spotify_id ao ranking para chave estrangeira
+                        item["spotify_id"] = df_item.get("id")
 
                 elif cfg["type"] == "artist":
-                    artist = normalize_artist(item["artist"])
+                    artist = normalize_artist(item["title"])
                     # Verifica se o artista já foi procurado
                     if already_seen(df_artist, query_artist=artist):
                         print("Artista ja buscado, pulando.")
+                        # Busca o spotify_id do dataframe existente
+                        item["spotify_id"] = df_artist[df_artist['query_artist'] == artist]['id'].iloc[0]
                         continue
 
                     df_item = process_artist(item, spotify)
@@ -208,9 +224,17 @@ def run_pipeline():
                         # Colunas adicionadas para controle de duplicidade
                         df_item["query_artist"] = artist
                         df_artist = pd.concat([df_artist, pd.DataFrame([df_item])])
+                        
+                        # Adiciona o spotify_id ao ranking para chave estrangeira
+                        item["spotify_id"] = df_item.get("id")
 
             except Exception as e:
                 print("Erro:", e)
+
+        # Salva o ranking 
+        save_rank_csv(chart_name + "_" + today, ranking)
+        print(f"{len(ranking)} linhas salvas no CSV.")
+
 
     for artist_id in sorted(set(artist_ids)):
         # Processa os artistas usando o ID do Spotify, para artistas fora do ranking de artistas (ex: artistas de álbuns e faixas)
@@ -234,10 +258,10 @@ def run_pipeline():
                 album_data["query_artist"] = album_data["artists"][0].get("name")
             df_album = pd.concat([df_album, pd.DataFrame([album_data])])
 
-    df_track.to_csv(f'data/tracks.csv')
-    df_album.to_csv(f'data/albums.csv')
-    df_artist.to_csv(f'data/artists.csv')
-    df_features.to_csv(f'data/audio_features.csv')
+    df_track.to_csv('data/tracks.csv', index=False)
+    df_album.to_csv('data/albums.csv', index=False)
+    df_artist.to_csv('data/artists.csv', index=False)
+    df_features.to_csv('data/audio_features.csv', index=False)
 
 if __name__ == "__main__":
-    run_pipeline()
+    run_ingestion()
