@@ -30,11 +30,19 @@ class SpotifyClient:
         url = "https://api.spotify.com/v1/search"
         params = {"q": q, "type": "track", "limit": 1}
 
-        res = requests.get(url, headers=self._headers(), params=params).json()
+        res = requests.get(url, headers=self._headers(), params=params)
+        if res.status_code != 200:
+            print(f"Erro ao buscar track: {res.status_code} - {res.text}")
+            return None
+        res = res.json()
         if not res["tracks"]["items"]:
             # Se a busca com nome e artista não retornar resultados, tenta buscar apenas pelo nome da faixa
             params = {"q": f"track:{track}", "type": "track", "limit": 1}
-            res = requests.get(url, headers=self._headers(), params=params).json()
+            res = requests.get(url, headers=self._headers(), params=params)
+            if res.status_code != 200:
+                print(f"Erro ao buscar track (fallback): {res.status_code} - {res.text}")
+                return None
+            res = res.json()
             if not res["tracks"]["items"]:
                 return None
 
@@ -114,9 +122,21 @@ class SpotifyClient:
         url = "https://api.spotify.com/v1/search"
         params = {"q": q, "type": "album", "limit": 1}
 
-        res = requests.get(url, headers=self._headers(), params=params).json()
-        if not res["albums"]["items"]:
+        res = requests.get(url, headers=self._headers(), params=params)
+        if res.status_code != 200:
+            print(f"Erro ao buscar album: {res.status_code} - {res.text}")
             return None
+        res = res.json()
+        if not res["albums"]["items"]:
+            # Fallback: tenta buscar apenas pelo nome do album
+            params = {"q": f"album:{album}", "type": "album", "limit": 1}
+            res = requests.get(url, headers=self._headers(), params=params)
+            if res.status_code != 200:
+                print(f"Erro ao buscar album (fallback): {res.status_code} - {res.text}")
+                return None
+            res = res.json()
+            if not res["albums"]["items"]:
+                return None
 
         return res["albums"]["items"][0]
 
