@@ -56,6 +56,14 @@ def transform_albums(df_album, df_artists):
     # Converter artist_id para inteiro (substituir NaN por -1)
     df_album['artist_id'] = df_album['artist_id'].fillna(-1).astype(int)
     
+    # Converter release_date para formato de data adequado
+    if 'release_date' in df_album.columns:
+        df_album['release_date'] = pd.to_datetime(
+            df_album['release_date'],
+            format="mixed",
+            errors="coerce"
+        )
+    
     # Remover colunas desnecessárias
     columns_to_drop = ['tracks', 'copyrights', 'genres', 'type', 'release_date_precision', 
                        'query_title', 'query_artist']

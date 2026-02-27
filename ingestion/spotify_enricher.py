@@ -1,6 +1,12 @@
 import os
 import base64
 import requests
+from pathlib import Path
+from dotenv import load_dotenv
+
+config_path = Path(__file__).parent.parent / 'config' / '.env'
+load_dotenv(config_path)
+
 
 class SpotifyClient:
     def __init__(self):
