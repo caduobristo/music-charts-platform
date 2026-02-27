@@ -12,6 +12,10 @@ class SpotifyClient:
     def __init__(self):
         self.client_id = os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+        
+        if not self.client_id or not self.client_secret:
+            raise ValueError("SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET devem estar configurados no .env")
+        
         self.token = self._get_token()
 
     def _get_token(self):
@@ -24,7 +28,18 @@ class SpotifyClient:
             headers={"Authorization": f"Basic {auth}"},
             data={"grant_type": "client_credentials"}
         )
-        return res.json()["access_token"]
+        
+        if res.status_code != 200:
+            print(f"Erro na autenticacao Spotify: {res.status_code}")
+            print(f"Resposta: {res.text}")
+            raise Exception(f"Falha na autenticacao com Spotify: {res.status_code} - {res.text}")
+        
+        token_data = res.json()
+        if "access_token" not in token_data:
+            print(f"Resposta da API nao contem access_token: {token_data}")
+            raise KeyError(f"access_token nao encontrado na resposta: {token_data}")
+        
+        return token_data["access_token"]
 
     def _headers(self):
         return {"Authorization": f"Bearer {self.token}"}

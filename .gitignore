@@ -1,3 +1,25 @@
 .env
 **/__pycache__
 data/
+*.pyc
+*.pyo
+
+# Airflow
+airflow/logs/
+airflow/*.pickle
+airflow/secrets.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+venv/
+env/
+*.egg-info/
+dist/
+build/

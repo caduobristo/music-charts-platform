@@ -159,6 +159,10 @@ def transform_ranks(df_ranks, chart_name):
 def transform_audio_features(df_features, df_tracks):
     print("Transformando audio features...")
     
+    # Remover coluna id existente se houver (será substituída)
+    if 'id' in df_features.columns:
+        df_features.drop(columns=['id'], inplace=True)
+    
     # Criar mapeamento de spotify_id para id da tabela tracks
     track_mapping = df_tracks.set_index('spotify_id')['id'].to_dict()
     
@@ -205,6 +209,10 @@ def transform_ranks_relational(df_ranks, chart_name, df_artists=None, df_albums=
         track_mapping = df_tracks.set_index('spotify_id')['id'].to_dict()
         df_ranks['track_id'] = df_ranks['spotify_id'].map(track_mapping).fillna(-1).astype(int)
         df_ranks.drop(columns=['spotify_id', 'artist', 'title'], inplace=True, errors='ignore')
+    
+    # Remover coluna id existente se houver (será substituída)
+    if 'id' in df_ranks.columns:
+        df_ranks.drop(columns=['id'], inplace=True)
     
     # Adicionar id sequencial
     df_ranks.insert(0, 'id', range(1, len(df_ranks) + 1))
